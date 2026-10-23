@@ -9,6 +9,21 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+// Copied from
+// https://github.com/torvalds/linux/blob/master/drivers/hid/hid-nintendo.c
+#define JC_NUM_LEDS		4
+#define JC_NUM_LED_PATTERNS 8
+static const bool joycon_player_led_patterns[JC_NUM_LED_PATTERNS][JC_NUM_LEDS] = {
+	{ 1, 0, 0, 0 },
+	{ 1, 1, 0, 0 },
+	{ 1, 1, 1, 0 },
+	{ 1, 1, 1, 1 },
+	{ 1, 0, 0, 1 },
+	{ 1, 0, 1, 0 },
+	{ 1, 0, 1, 1 },
+	{ 0, 1, 1, 0 },
+};
+
 //private
 std::optional<std::string> phys_ctlr::get_first_glob_path(std::string const &pattern)
 {
@@ -319,7 +334,7 @@ phys_ctlr::~phys_ctlr()
 
 bool phys_ctlr::set_player_led(int index, bool on)
 {
-    if (index > 3 || !player_leds[index].is_open() || is_serial)
+    if (index >= JC_NUM_LEDS || !player_leds[index].is_open() || is_serial)
         return false;
 
     player_leds[index] << (on ? '1' : '0');
@@ -329,23 +344,23 @@ bool phys_ctlr::set_player_led(int index, bool on)
 
 bool phys_ctlr::set_all_player_leds(bool on)
 {
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < JC_NUM_LEDS; i++) {
         if (!set_player_led(i, on))
             return false;
     }
     return true;
 }
 
+// player starts with 1, so usually it's in [1;4] range
 bool phys_ctlr::set_player_leds_to_player(int player)
 {
-    if (player < 1 || player > 4) {
+    if (player <= 0 || player > JC_NUM_LED_PATTERNS) {
         std::cerr << player << " is not a valid player led value\n";
         return false;
     }
 
-    set_all_player_leds(false);
-    for (int i = 0; i < player; i++) {
-        set_player_led(i, true);
+    for (int i = 0; i < JC_NUM_LEDS; i++) {
+        set_player_led(i, joycon_player_led_patterns[player-1][i]);
     }
     return true;
 }
@@ -360,20 +375,18 @@ bool phys_ctlr::set_home_led(unsigned short brightness)
     return true;
 }
 
-bool phys_ctlr::blink_player_leds()
+// Static "unpaired" indicator: LEDs 2 and 4 lit (top-to-bottom pattern _L_L).
+// Each LED change is a single SET_PLAYER_LIGHTS HID report over BT and is
+// not re-sent. The previous implementation armed the kernel ledtrig-timer
+// trigger, which made the LED core re-send one report per LED every 500ms
+// (8 reports/s per unpaired controller); hid-nintendo rate-limits those
+// subcommands, so the flashing stuttered. A native firmware blink exists
+// (flash nibble of SET_PLAYER_LIGHTS) but hid-nintendo does not expose it.
+bool phys_ctlr::set_unpaired_leds()
 {
-    /* start with all player leds off */
-    set_all_player_leds(false);
-
-    for (int i = 0; i < 4; i++) {
-        try {
-            player_led_triggers[i] << "timer";
-            player_led_triggers[i].flush();
-        } catch (std::exception& e) {
-            std::cerr << "Failed to select LED timer trigger. Is ledtrig-timer module probed?\n";
-            return false;
-        }
-    }
+    static const bool wait_pattern[4] = { 0, 1, 0, 1 };
+    for (int i = 0; i < 4; i++)
+        set_player_led(i, wait_pattern[i]);
     return true;
 }
 

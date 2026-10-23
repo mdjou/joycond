@@ -16,7 +16,7 @@ is a
 .B Systemd
 service that pairs Nintendo Switch joy-cons together into a virtual controller
 .SH USAGE
-When a joy-con or pro controller is connected via bluetooth or USB, the player LEDs should start blinking periodically. This signals that the controller is in pairing mode.
+When a joy-con or pro controller is connected via bluetooth or USB, the player LEDs signal that the controller is in pairing mode (by default, LEDs 2 and 4 light up steadily; see CONFIGURATION).
 
 For the pro controller, pressing both triggers will "pair" it.
 
@@ -25,6 +25,25 @@ With the joy-cons, to use a single contoller alone, hold ZL and L at the same ti
 To combine two joy-cons into a virtual input device, press a *single* trigger on both of them at the same time. A new uinput device will be created called "Nintendo Switch Combined Joy-Cons".
 
 Rumble support is now functional for the combined joy-con uinput device.
+.SH CONFIGURATION
+joycond reads an optional
+.B /etc/joycond.conf
+at startup ("key = value" lines; '#' starts a comment).
+A missing file means all built-in defaults apply.
+Keys:
+.TP
+.B swap_ab_xy
+= true|false (default: false). On the combined controller, swaps the A
+and B buttons and the X and Y buttons.
+.TP
+.B rumble_gain
+= 0.0-1.0 (default: 1.0). Scales the magnitudes of uploaded rumble
+effects before they are forwarded to the physical joy-cons, e.g. 0.5
+for half strength.
+.TP
+.B pair_rumble_mode
+= both|left|right|off (default: both). Which physical joy-con(s)
+receive forwarded rumble events on the paired (combined) controller.
 .SH OPTIONS
 .B joycond
 has no options

@@ -1,5 +1,6 @@
 #include "virt_ctlr_combined.h"
 
+#include <chrono>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
@@ -11,6 +12,190 @@
 #include <unistd.h>
 #include <vector>
 
+const bool _lessthumbs_remap_1 = true;
+
+namespace
+{
+/* Clear the button and axis states contributed by the left joy-con. */
+void clear_left_ctlr_button_states(struct libevdev_uinput* uidev)
+{
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_X, 0);
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_Y, 0);
+#if defined(ANDROID) || defined(__ANDROID__)
+    /* ZL and DPAD are remapped to analog trigger and HAT on android */
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_Z, 0);
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_HAT0X, 0);
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_HAT0Y, 0);
+#else
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_DPAD_UP, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_DPAD_DOWN, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_DPAD_LEFT, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_DPAD_RIGHT, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TL2, 0);
+#endif
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_SELECT, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_Z, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_THUMBL, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TL, 0);
+    /* Only relayed when not connected via serial, but zeroing is harmless otherwise */
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TRIGGER_HAPPY1, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TRIGGER_HAPPY2, 0);
+    libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
+}
+
+/* Clear the button and axis states contributed by the right joy-con. */
+void clear_right_ctlr_button_states(struct libevdev_uinput* uidev)
+{
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_RX, 0);
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_RY, 0);
+#if defined(ANDROID) || defined(__ANDROID__)
+    /* ZR is remapped to analog trigger on android */
+    libevdev_uinput_write_event(uidev, EV_ABS, ABS_RZ, 0);
+#else
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TR2, 0);
+#endif
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_START, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_MODE, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_THUMBR, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_SOUTH, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_EAST, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_NORTH, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_WEST, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TR, 0);
+    /* Only relayed when not connected via serial, but zeroing is harmless otherwise */
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TRIGGER_HAPPY3, 0);
+    libevdev_uinput_write_event(uidev, EV_KEY, BTN_TRIGGER_HAPPY4, 0);
+    libevdev_uinput_write_event(uidev, EV_SYN, SYN_REPORT, 0);
+}
+
+/* Scale an ff_effect's magnitudes by gain (0.0 = off .. 1.0 = full). */
+void scale_ff_effect(struct ff_effect& effect, double gain)
+{
+    switch (effect.type) {
+        case FF_RUMBLE:
+            effect.u.rumble.strong_magnitude = (unsigned short)(effect.u.rumble.strong_magnitude * gain);
+            effect.u.rumble.weak_magnitude = (unsigned short)(effect.u.rumble.weak_magnitude * gain);
+            break;
+        case FF_CONSTANT:
+            effect.u.constant.level = (unsigned short)(effect.u.constant.level * gain);
+            break;
+        case FF_PERIODIC:
+            effect.u.periodic.magnitude = (short)(effect.u.periodic.magnitude * gain);
+            break;
+        default:
+            break;
+    }
+}
+
+#ifdef JOYCOND_DEBUG
+/* Return the elapsed ms since the last rumble, and update last_rumble to now if this is an EV_FF event. */
+long long elapsed_since_last_rumble(const struct input_event& ev,
+                                    std::chrono::steady_clock::time_point now,
+                                    std::chrono::steady_clock::time_point& last_rumble)
+{
+    if (ev.type != EV_FF)
+        return 0; // short path
+    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_rumble).count();
+    if (ev.code < FF_GAIN) {
+        last_rumble = now;
+    }
+    return elapsed_ms;
+}
+
+void debug_print_uinput_event(const struct input_event& ev, std::chrono::steady_clock::time_point now, long long rumble_elapsed_ms)
+{
+    auto ts_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    if (ev.type == EV_FF) {
+        std::cout << std::dec << ts_ms << "ms|uinput EV_FF: type=0x0015; code=0x" << std::hex << ev.code
+                  << "; value=0x" << ev.value << "|" << std::dec << ev.value
+                //   << "; time=0x" << std::dec << ev.time.tv_sec << "." << ev.time.tv_usec
+                  << "; delta=" << rumble_elapsed_ms << "ms\n";
+    } else if (ev.type == EV_UINPUT && ev.code == UI_FF_UPLOAD) {
+        std::cout << std::dec << ts_ms << "ms|uinput EV_UINPUT/UI_FF_UPLOAD: type=0x0101; code=0x" << std::hex << ev.code
+                  << "; value=0x" << ev.value << "|" << std::dec << ev.value
+                //   << "; time=0x" << std::dec << ev.time.tv_sec << "." << ev.time.tv_usec
+                  << "\n";
+    } else if (ev.type == EV_UINPUT && ev.code == UI_FF_ERASE) {
+        std::cout << std::dec << ts_ms << "ms|uinput EV_UINPUT/UI_FF_ERASE: type=0x0101; code=0x" << std::hex << ev.code
+                  << "; value=0x" << ev.value << "|" << std::dec << ev.value
+                //   << "; time=0x" << std::dec << ev.time.tv_sec << "." << ev.time.tv_usec
+                  << "\n";
+    } else if (ev.type == EV_LED) {
+        std::cout << std::dec << ts_ms << "ms|uinput EV_LED: type=0x0011; code=0x" << std::hex << ev.code
+                  << "; value=0x" << ev.value << "|" << std::dec << ev.value
+                //   << "; time=0x" << std::dec << ev.time.tv_sec << "." << ev.time.tv_usec
+                  << "\n";
+    } else {
+        std::cout << std::dec << ts_ms << "ms|uinput (unknown): type=0x" << std::hex << ev.type
+                  << "; code=0x" << ev.code
+                  << "; value=0x" << ev.value << "|" << std::dec << ev.value
+                //   << "; time=0x" << std::dec << ev.time.tv_sec << "." << ev.time.tv_usec
+                  << "\n";
+    }
+}
+
+void debug_print_ff_effect(const struct ff_effect& effect, long long ts_ms)
+{
+    switch (effect.type) {
+        case FF_RUMBLE:
+            std::cout << std::dec << ts_ms << "ms|effect 0x" << std::hex << effect.type << " FF_RUMBLE"
+                    << "; rumble.strong_magnitude=0x" << effect.u.rumble.strong_magnitude
+                    << "; rumble.weak_magnitude=0x" << effect.u.rumble.weak_magnitude
+                    // << "; replay.delay 0x" << effect.replay.delay
+                    << "; replay.length 0x" << effect.replay.length
+                    // << "; trigger.button 0x" << effect.trigger.button
+                    // << "; trigger.interval 0x" << effect.trigger.interval
+                    << std::dec << "\n";
+            break;
+        case FF_CONSTANT:
+            std::cout << std::dec << ts_ms << "ms|effect 0x" << std::hex << effect.type << " FF_CONSTANT"
+                    << "; constant.level=0x" << effect.u.constant.level
+                    << "; constant.envelope.attack_length=0x" << effect.u.constant.envelope.attack_length
+                    << "; constant.envelope.attack_level=0x" << effect.u.constant.envelope.attack_level
+                    << "; constant.envelope.fade_length=0x" << effect.u.constant.envelope.fade_length
+                    << "; constant.envelope.fade_level=0x" << effect.u.constant.envelope.fade_level
+                    << std::dec << "\n";
+            break;
+        case FF_PERIODIC:
+            std::cout << std::dec << ts_ms << "ms|effect 0x" << std::hex << effect.type << " FF_PERIODIC"
+                    << "; periodic.magnitude=0x" << effect.u.periodic.magnitude
+                    << "; periodic.period=0x" << effect.u.periodic.period
+                    << "; periodic.offset=0x" << effect.u.periodic.offset
+                    << "; periodic.phase=0x" << effect.u.periodic.phase
+                    << "; periodic.waveform=0x" << effect.u.periodic.waveform
+                    // (there's more fields, skipping for now)
+                    << std::dec << "\n";
+            break;
+        case FF_HAPTIC:
+            std::cout << std::dec << ts_ms << "ms|effect 0x" << std::hex << effect.type << " FF_HAPTIC"
+                    << "; haptic.intensity=0x" << effect.u.haptic.intensity
+                    << "; haptic.hid_usage=0x" << effect.u.haptic.hid_usage
+                    << "; haptic.repeat_count=0x" << effect.u.haptic.repeat_count
+                    << "; haptic.retrigger_period=0x" << effect.u.haptic.retrigger_period
+                    << "; haptic.vendor_id=0x" << effect.u.haptic.vendor_id
+                    << "; haptic.vendor_waveform_page=0x" << effect.u.haptic.vendor_waveform_page
+                    << std::dec << "\n";
+            break;
+        case FF_SPRING:
+        case FF_FRICTION:
+        case FF_DAMPER:
+        case FF_INERTIA:
+        case FF_RAMP:
+        default:
+            std::cout << std::dec << ts_ms << "ms|effect type 0x" << std::hex << effect.type
+            << "; direction 0x" << effect.direction
+            << "; id 0x" << effect.id
+            << "; replay.delay 0x" << effect.replay.delay
+            << "; replay.length 0x" << effect.replay.length
+            << "; trigger.button 0x" << effect.trigger.button
+            << "; trigger.interval 0x" << effect.trigger.interval
+            << std::dec << "\n";
+            break;
+    }
+}
+#endif
+}
+
 //private
 void virt_ctlr_combined::relay_events(std::shared_ptr<phys_ctlr> phys)
 {
@@ -19,6 +204,15 @@ void virt_ctlr_combined::relay_events(std::shared_ptr<phys_ctlr> phys)
     bool is_serial;
 
     int ret = libevdev_next_event(evdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
+
+    if (ret == -ENODEV) {
+        if (phys == physl)
+            clear_left_ctlr_button_states(uidev);
+        else if (phys == physr)
+            clear_right_ctlr_button_states(uidev);
+        return;
+    }
+
     while (ret == LIBEVDEV_READ_STATUS_SYNC || ret == LIBEVDEV_READ_STATUS_SUCCESS) {
         if (ret == LIBEVDEV_READ_STATUS_SYNC) {
             std::cout << "handle sync\n";
@@ -76,11 +270,32 @@ void virt_ctlr_combined::relay_events(std::shared_ptr<phys_ctlr> phys)
                 }
             }
 #endif
+            // _lessthumbs_remap_1 - remap for for less thumbstick pressing
+            //   for my Outer Wilds playthrough
+            if (_lessthumbs_remap_1) {
+                switch (ev.code) {
+                    case BTN_SELECT: ev.code = BTN_THUMBL; break;
+                    case BTN_Z:  ev.code = BTN_SELECT; break;
+                    case BTN_MODE:  ev.code = BTN_THUMBR; break;
+                    default: break;
+                }
+            }
+            /* Swap A/B and X/Y if requested in the config */
+            if (config.swap_ab_xy && ev.type == EV_KEY) {
+                switch (ev.code) {
+                    case BTN_SOUTH: ev.code = BTN_EAST; break;
+                    case BTN_EAST:  ev.code = BTN_SOUTH; break;
+                    case BTN_WEST:  ev.code = BTN_NORTH; break;
+                    case BTN_NORTH: ev.code = BTN_WEST; break;
+                    default: break;
+                }
+            }
             libevdev_uinput_write_event(uidev, ev.type, ev.code, ev.value);
         }
         ret = libevdev_next_event(evdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
     }
 }
+
 
 void virt_ctlr_combined::handle_uinput_event()
 {
@@ -88,6 +303,11 @@ void virt_ctlr_combined::handle_uinput_event()
     int ret;
 
     while ((ret = read(get_uinput_fd(), &ev, sizeof(ev))) == sizeof(ev)) {
+        #ifdef JOYCOND_DEBUG
+        auto now = std::chrono::steady_clock::now();
+        debug_print_uinput_event(ev, now, elapsed_since_last_rumble(ev, now, last_rumble));
+        #endif
+
         switch (ev.type) {
             case EV_FF:
                 {
@@ -102,12 +322,22 @@ void virt_ctlr_combined::handle_uinput_event()
                         redirectedr.code = rumble_effects[ev.code].second.id;
                     }
 
-                    /* Just forward this FF event on to the actual devices */
-                    if (physl) {
+                    /* Forward this FF event on to the actual devices. Rumble play
+                       events with valid effect_id (code < FF_GAIN) are skipped for the joy-con(s)
+                       excluded by the configured rumble mode; other FF events
+                       (e.g. the gain events the app sends at start) are always
+                       forwarded. */
+                    const bool play_event = ev.code < FF_GAIN;
+                    const bool skip_l = play_event &&
+                                       (config.pair_rumble_mode == CombinedRumbleMode::Off || config.pair_rumble_mode == CombinedRumbleMode::Right);
+                    const bool skip_r = play_event &&
+                                       (config.pair_rumble_mode == CombinedRumbleMode::Off || config.pair_rumble_mode == CombinedRumbleMode::Left);
+
+                    if (physl && !skip_l) {
                         if (write(physl->get_fd(), &redirectedl, sizeof(redirectedl)) != sizeof(redirectedl))
                             std::cerr << "Failed to forward EV_FF to physl\n";
                     }
-                    if (physr) {
+                    if (physr && !skip_r) {
                         if (write(physr->get_fd(), &redirectedr, sizeof(redirectedr)) != sizeof(redirectedr))
                             std::cerr << "Failed to forward EV_FF to physr\n";
                     }
@@ -127,6 +357,16 @@ void virt_ctlr_combined::handle_uinput_event()
                             upload.request_id = ev.value;
                             if (ioctl(get_uinput_fd(), UI_BEGIN_FF_UPLOAD, &upload))
                                 std::cerr << "Failed to get uinput_ff_upload: " << strerror(errno) << std::endl;
+
+                            #ifdef JOYCOND_DEBUG
+                            // Debug
+                            auto ts_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+                            debug_print_ff_effect(upload.effect, ts_ms);
+                            #endif
+
+                            /* Scale the magnitudes down if requested in the config */
+                            if (config.rumble_gain != 1.0)
+                                scale_ff_effect(upload.effect, config.rumble_gain);
 
                             effect = upload.effect;
                             /* Check if already allocated or it needs an update */
@@ -148,6 +388,7 @@ void virt_ctlr_combined::handle_uinput_event()
                                 /* Check if already allocated or it needs an update */
                                 if (allocate_new_effect)
                                     effect.id = -1;
+                                // TEMPORARILY DISABLED R UP
                                 if (ioctl(physr->get_fd(), EVIOCSFF, &effect) == -1)
                                     upload.retval = errno;
                                 effect_r = effect;
@@ -221,10 +462,11 @@ void virt_ctlr_combined::handle_uinput_event()
 }
 
 //public
-virt_ctlr_combined::virt_ctlr_combined(std::shared_ptr<phys_ctlr> physl, std::shared_ptr<phys_ctlr> physr, epoll_mgr& epoll_manager) :
+virt_ctlr_combined::virt_ctlr_combined(std::shared_ptr<phys_ctlr> physl, std::shared_ptr<phys_ctlr> physr, epoll_mgr& epoll_manager, joycond_config const &config) :
     physl(physl),
     physr(physr),
     epoll_manager(epoll_manager),
+    config(config),
     subscriber(nullptr),
     virt_evdev(nullptr),
     uidev(nullptr),
@@ -232,6 +474,10 @@ virt_ctlr_combined::virt_ctlr_combined(std::shared_ptr<phys_ctlr> physl, std::sh
     rumble_effects(),
     left_mac(physl->get_mac_addr()),
     right_mac(physr->get_mac_addr())
+#ifdef JOYCOND_DEBUG
+    ,
+    last_rumble(std::chrono::steady_clock::now())
+#endif
 {
     int ret;
 
@@ -401,9 +647,11 @@ void virt_ctlr_combined::remove_phys_ctlr(const std::shared_ptr<phys_ctlr> phys)
 {
     if (phys == physl) {
         std::cout << "Removing left joy-con from virtual combined controller\n";
+        clear_left_ctlr_button_states(uidev);
         physl = nullptr;
     } else if (phys == physr) {
         std::cout << "Removing right joy-con from virtual combined controller\n";
+        clear_right_ctlr_button_states(uidev);
         physr = nullptr;
     } else {
         std::cerr << "ERROR: Attempted to remove non-existant controller from combined joy-cons\n";

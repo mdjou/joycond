@@ -3,6 +3,7 @@
 #include "virt_ctlr_combined.h"
 #include "virt_ctlr_pro.h"
 
+#include <cstdint>
 #include <iostream>
 #include <unistd.h>
 
@@ -93,7 +94,7 @@ void ctlr_mgr::add_passthrough_ctlr(std::shared_ptr<phys_ctlr> phys)
 
 void ctlr_mgr::add_combined_ctlr()
 {
-    std::unique_ptr<virt_ctlr_combined> combined(new virt_ctlr_combined(left, right, epoll_manager));
+    std::unique_ptr<virt_ctlr_combined> combined(new virt_ctlr_combined(left, right, epoll_manager, config));
 
     std::cout << "Creating combined joy-con input\n";
 
@@ -145,8 +146,9 @@ void ctlr_mgr::add_virt_procon_ctlr(std::shared_ptr<phys_ctlr> phys)
 }
 
 //public
-ctlr_mgr::ctlr_mgr(epoll_mgr& epoll_manager) :
+ctlr_mgr::ctlr_mgr(epoll_mgr& epoll_manager, joycond_config const &config) :
     epoll_manager(epoll_manager),
+    config(config),
     unpaired_controllers(),
     subscribers(),
     paired_controllers()
@@ -166,7 +168,7 @@ void ctlr_mgr::add_ctlr(const std::string& devpath, const std::string& devname)
         std::cout << "Creating new phys_ctlr for " << devname << std::endl;
         phys = std::make_shared<phys_ctlr>(devpath, devname);
         unpaired_controllers[devpath] = phys;
-        phys->blink_player_leds();
+        phys->set_unpaired_leds();
         subscribers[devpath] = std::make_shared<epoll_subscriber>(std::vector({phys->get_fd()}),
                                                 [=](int event_fd){epoll_event_callback(event_fd);});
         epoll_manager.add_subscriber(subscribers[devpath]);

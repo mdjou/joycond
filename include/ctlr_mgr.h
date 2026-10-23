@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "epoll_mgr.h"
+#include "joycond_config.h"
 #include "phys_ctlr.h"
 #include "virt_ctlr.h"
 
@@ -14,6 +15,7 @@ class ctlr_mgr
 {
     private:
         epoll_mgr& epoll_manager;
+        joycond_config config;
         std::map<std::string, std::shared_ptr<phys_ctlr>> unpaired_controllers;
         std::map<std::string, std::shared_ptr<epoll_subscriber>> subscribers;
         std::vector<std::unique_ptr<virt_ctlr>> paired_controllers;
@@ -28,7 +30,7 @@ class ctlr_mgr
         void add_virt_procon_ctlr(std::shared_ptr<phys_ctlr> phys);
 
     public:
-        ctlr_mgr(epoll_mgr& epoll_manager);
+        ctlr_mgr(epoll_mgr& epoll_manager, joycond_config const &config);
         ~ctlr_mgr();
 
         void add_ctlr(const std::string& devpath, const std::string& devname);

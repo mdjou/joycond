@@ -4,7 +4,9 @@
 #include "virt_ctlr.h"
 #include "phys_ctlr.h"
 #include "epoll_mgr.h"
+#include "joycond_config.h"
 
+#include <chrono>
 #include <libevdev/libevdev.h>
 #include <map>
 #include <memory>
@@ -15,6 +17,7 @@ class virt_ctlr_combined : public virt_ctlr
         std::shared_ptr<phys_ctlr> physl;
         std::shared_ptr<phys_ctlr> physr;
         epoll_mgr& epoll_manager;
+        joycond_config const &config;
         std::shared_ptr<epoll_subscriber> subscriber;
         struct libevdev *virt_evdev;
         struct libevdev_uinput *uidev;
@@ -22,11 +25,13 @@ class virt_ctlr_combined : public virt_ctlr
         std::map<int, std::pair<struct ff_effect, struct ff_effect>> rumble_effects;
         std::string left_mac;
         std::string right_mac;
-
+#ifdef JOYCOND_DEBUG
+        std::chrono::steady_clock::time_point last_rumble;
+#endif
         void relay_events(std::shared_ptr<phys_ctlr> phys);
         void handle_uinput_event();
     public:
-        virt_ctlr_combined(std::shared_ptr<phys_ctlr> physl, std::shared_ptr<phys_ctlr> physr, epoll_mgr& epoll_manager);
+        virt_ctlr_combined(std::shared_ptr<phys_ctlr> physl, std::shared_ptr<phys_ctlr> physr, epoll_mgr& epoll_manager, joycond_config const &config);
         virtual ~virt_ctlr_combined();
 
         virtual void handle_events(int fd);

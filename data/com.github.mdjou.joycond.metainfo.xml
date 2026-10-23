@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component>
-  <id>com.github.DanielOgorchock.joycond</id>
+  <id>com.github.mdjou.joycond</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <name>joycond</name>
   <summary>System service to use Nintendo joy-cons as joypads</summary>
-  <url type="homepage">https://github.com/DanielOgorchock/joycond</url>
+  <url type="homepage">https://github.com/mdjou/joycond</url>
   <description>
     <p>
       joycond is a linux daemon which uses the evdev devices provided by

@@ -11,5 +11,7 @@ target_sources(
         epoll_subscriber.cpp
         ctlr_detector_udev.cpp
         ctlr_mgr.cpp
+        joycond_config.cpp
+        hidraw_blink.cpp
     )
 
