@@ -23,6 +23,9 @@ struct joycond_config
     CombinedRumbleMode pair_rumble_mode = CombinedRumbleMode::Both;
     // Swap the A/B and X/Y buttons on the combined controller.
     bool swap_ab_xy = false;
+    // Disable the IMU report stream on the physical controllers when they
+    // connect.
+    bool disable_imu = false;
 };
 
 // Parse a "key = value" config file from path. A missing file yields the

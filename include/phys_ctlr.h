@@ -17,6 +17,7 @@ class phys_ctlr
         std::string devname;
         struct libevdev *evdev;
         bool is_serial;
+        bool disable_imu;
         std::fstream player_leds[4];
         std::fstream player_led_triggers[4];
         std::fstream home_led;
@@ -32,7 +33,7 @@ class phys_ctlr
         void handle_event(struct input_event const &ev);
 
     public:
-        phys_ctlr(std::string const &devpath, std::string const &devname);
+        phys_ctlr(std::string const &devpath, std::string const &devname, bool disable_imu);
         ~phys_ctlr();
 
         std::string const &get_devpath() const { return devpath; }

@@ -63,7 +63,7 @@ void phys_ctlr::init_hidraw()
         // probe, including its own IMU enable, is complete by the time
         // this evdev node appears, so this override sticks until the
         // controller next reconnects.
-        if (model == Model::Left_Joycon || model == Model::Right_Joycon || model == Model::Procon) {
+        if (disable_imu && (model == Model::Left_Joycon || model == Model::Right_Joycon || model == Model::Procon)) {
             if (set_imu_enabled(hidraw_node, false))
                 std::cout << "IMU stream disabled on " << hidraw_node << std::endl;
             else
@@ -256,11 +256,12 @@ void phys_ctlr::handle_event(struct input_event const &ev)
 }
 
 //public
-phys_ctlr::phys_ctlr(std::string const &devpath, std::string const &devname) :
+phys_ctlr::phys_ctlr(std::string const &devpath, std::string const &devname, bool disable_imu) :
     devpath(devpath),
     devname(devname),
     evdev(nullptr),
-    is_serial(false)
+    is_serial(false),
+    disable_imu(disable_imu)
 {
 
     zero_triggers();

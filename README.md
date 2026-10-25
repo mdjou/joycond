@@ -36,6 +36,9 @@ A missing file means all built-in defaults apply.
 
 - `swap_ab_xy = true|false` (default: `false`) — on the combined
   controller, swaps the A and B buttons and the X and Y buttons.
+- `disable_imu = true|false` (default: `false`) — when `true`, turns off
+  the IMU (gyro/accelerometer) report stream on the physical controllers
+  when they connect, saving BT bandwidth joycond itself doesn't use.
 - `rumble_gain = 0.0-1.0` (default: `1.0`) — scales the magnitudes of
   uploaded rumble effects (FF_RUMBLE, FF_CONSTANT, FF_PERIODIC) before
   they are forwarded to the physical joy-cons, e.g. `0.5` for half

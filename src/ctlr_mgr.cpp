@@ -166,7 +166,7 @@ void ctlr_mgr::add_ctlr(const std::string& devpath, const std::string& devname)
 
     if (!unpaired_controllers.count(devpath)) {
         std::cout << "Creating new phys_ctlr for " << devname << std::endl;
-        phys = std::make_shared<phys_ctlr>(devpath, devname);
+        phys = std::make_shared<phys_ctlr>(devpath, devname, config.disable_imu);
         unpaired_controllers[devpath] = phys;
         phys->set_unpaired_leds();
         subscribers[devpath] = std::make_shared<epoll_subscriber>(std::vector({phys->get_fd()}),

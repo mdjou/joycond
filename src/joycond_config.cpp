@@ -63,6 +63,13 @@ joycond_config load_config(std::string const &path)
             else
                 std::cerr << "Config " << path << " line " << line_num
                           << ": swap_ab_xy expects true|false, got '" << value << "'\n";
+        } else if (key == "disable_imu") {
+            std::optional<bool> disable_imu_parsed = parse_bool(value);
+            if (disable_imu_parsed)
+                config.disable_imu = *disable_imu_parsed;
+            else
+                std::cerr << "Config " << path << " line " << line_num
+                          << ": disable_imu expects true|false, got '" << value << "'\n";
         } else if (key == "pair_rumble_mode") {
             if (value == "both")
                 config.pair_rumble_mode = CombinedRumbleMode::Both;
