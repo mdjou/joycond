@@ -5,6 +5,7 @@ LOCAL_SRC_FILES := \
     src/ctlr_detector_android.cpp \
     src/ctlr_mgr.cpp \
     src/joycond_config.cpp \
+    src/hidraw.cpp \
     src/epoll_mgr.cpp \
     src/epoll_subscriber.cpp \
     src/phys_ctlr.cpp \

@@ -1,4 +1,5 @@
 #include "phys_ctlr.h"
+#include "hidraw.h"
 
 #include <fcntl.h>
 #include <iostream>
@@ -49,6 +50,28 @@ std::optional<std::string> phys_ctlr::get_led_path(std::string const &name)
 #else
     return get_first_glob_path(std::string("/sys/") + devpath + "/device/device/leds/*" + name);
 #endif
+}
+
+void phys_ctlr::init_hidraw()
+{
+    if (auto node = detect_hidraw_node(devpath)) {
+        hidraw_node = *node;
+        std::cout << "hidraw node: " << hidraw_node << std::endl;
+
+        // joycond doesn't use the IMU, so turn off its constant report
+        // stream (36 bytes per ~15ms report over BT). hid-nintendo's
+        // probe, including its own IMU enable, is complete by the time
+        // this evdev node appears, so this override sticks until the
+        // controller next reconnects.
+        if (model == Model::Left_Joycon || model == Model::Right_Joycon || model == Model::Procon) {
+            if (set_imu_enabled(hidraw_node, false))
+                std::cout << "IMU stream disabled on " << hidraw_node << std::endl;
+            else
+                std::cout << "Failed to disable IMU stream on " << hidraw_node << std::endl;
+        }
+    } else {
+        std::cout << "No hidraw node found for " << devpath << std::endl;
+    }
 }
 
 void phys_ctlr::init_leds()
@@ -289,6 +312,7 @@ phys_ctlr::phys_ctlr(std::string const &devpath, std::string const &devname) :
             break;
     }
 
+    init_hidraw();
     init_leds();
 
     // Prevent other users from having access to the evdev until it's paired

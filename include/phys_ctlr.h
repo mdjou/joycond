@@ -23,9 +23,11 @@ class phys_ctlr
         bool l, zl, r, zr, sl, sr, plus, minus;
         enum Model model;
         std::string mac_addr;
+        std::string hidraw_node;
 
         std::optional<std::string> get_first_glob_path(std::string const &pattern);
         std::optional<std::string> get_led_path(std::string const &name);
+        void init_hidraw();
         void init_leds();
         void handle_event(struct input_event const &ev);
 
@@ -48,6 +50,8 @@ class phys_ctlr
         struct libevdev *get_evdev() { return evdev; }
         void zero_triggers();
         const std::string& get_mac_addr() { return mac_addr; }
+        // Empty if no hidraw node could be resolved.
+        const std::string& get_hidraw_node() const { return hidraw_node; }
         bool is_serial_ctlr() const { return is_serial; }
 };
 

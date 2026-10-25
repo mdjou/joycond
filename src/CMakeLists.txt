@@ -12,6 +12,6 @@ target_sources(
         ctlr_detector_udev.cpp
         ctlr_mgr.cpp
         joycond_config.cpp
-        hidraw_blink.cpp
+        hidraw.cpp
     )
 
