@@ -38,6 +38,16 @@ void virt_ctlr_pro::relay_events(std::shared_ptr<phys_ctlr> phys)
                 continue;
             }
 #endif
+            /* Swap A/B and X/Y if requested in the config */
+            if (config.swap_ab_xy && ev.type == EV_KEY) {
+                switch (ev.code) {
+                    case BTN_SOUTH: ev.code = BTN_EAST; break;
+                    case BTN_EAST:  ev.code = BTN_SOUTH; break;
+                    case BTN_WEST:  ev.code = BTN_NORTH; break;
+                    case BTN_NORTH: ev.code = BTN_WEST; break;
+                    default: break;
+                }
+            }
             libevdev_uinput_write_event(uidev, ev.type, ev.code, ev.value);
         }
         ret = libevdev_next_event(evdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
@@ -153,9 +163,10 @@ void virt_ctlr_pro::handle_uinput_event()
 }
 
 //public
-virt_ctlr_pro::virt_ctlr_pro(std::shared_ptr<phys_ctlr> phys, epoll_mgr& epoll_manager) :
+virt_ctlr_pro::virt_ctlr_pro(std::shared_ptr<phys_ctlr> phys, epoll_mgr& epoll_manager, joycond_config const &config) :
     phys(phys),
     epoll_manager(epoll_manager),
+    config(config),
     subscriber(nullptr),
     virt_evdev(nullptr),
     uidev(nullptr),

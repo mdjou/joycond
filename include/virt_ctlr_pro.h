@@ -4,6 +4,7 @@
 #include "virt_ctlr.h"
 #include "phys_ctlr.h"
 #include "epoll_mgr.h"
+#include "joycond_config.h"
 
 #include <libevdev/libevdev.h>
 #include <map>
@@ -14,6 +15,7 @@ class virt_ctlr_pro : public virt_ctlr
     private:
         std::shared_ptr<phys_ctlr> phys;
         epoll_mgr& epoll_manager;
+        joycond_config const &config;
         std::shared_ptr<epoll_subscriber> subscriber;
         struct libevdev *virt_evdev;
         struct libevdev_uinput *uidev;
@@ -24,7 +26,7 @@ class virt_ctlr_pro : public virt_ctlr
         void relay_events(std::shared_ptr<phys_ctlr> phys);
         void handle_uinput_event();
     public:
-        virt_ctlr_pro(std::shared_ptr<phys_ctlr> phys, epoll_mgr& epoll_manager);
+        virt_ctlr_pro(std::shared_ptr<phys_ctlr> phys, epoll_mgr& epoll_manager, joycond_config const &config);
         virtual ~virt_ctlr_pro();
 
         virtual void handle_events(int fd);

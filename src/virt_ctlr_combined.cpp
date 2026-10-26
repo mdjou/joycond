@@ -12,8 +12,6 @@
 #include <unistd.h>
 #include <vector>
 
-const bool _lessthumbs_remap_1 = true;
-
 namespace
 {
 /* Clear the button and axis states contributed by the left joy-con. */
@@ -270,9 +268,8 @@ void virt_ctlr_combined::relay_events(std::shared_ptr<phys_ctlr> phys)
                 }
             }
 #endif
-            // _lessthumbs_remap_1 - remap for for less thumbstick pressing
-            //   for my Outer Wilds playthrough
-            if (_lessthumbs_remap_1) {
+            /* Remap for for less thumbstick clicking */
+            if (config.thumb_btn_remap_1) {
                 switch (ev.code) {
                     case BTN_SELECT: ev.code = BTN_THUMBL; break;
                     case BTN_Z:  ev.code = BTN_SELECT; break;

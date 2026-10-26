@@ -67,7 +67,7 @@ void ctlr_mgr::epoll_event_callback(int event_fd)
 
 void ctlr_mgr::add_passthrough_ctlr(std::shared_ptr<phys_ctlr> phys)
 {
-    std::unique_ptr<virt_ctlr_passthrough> passthrough(new virt_ctlr_passthrough(phys));
+    std::unique_ptr<virt_ctlr_passthrough> passthrough(new virt_ctlr_passthrough(phys, config));
 
     if (left == phys)
         left = nullptr;
@@ -122,7 +122,7 @@ void ctlr_mgr::add_combined_ctlr()
 
 void ctlr_mgr::add_virt_procon_ctlr(std::shared_ptr<phys_ctlr> phys)
 {
-    std::unique_ptr<virt_ctlr_pro> procon(new virt_ctlr_pro(phys, epoll_manager));
+    std::unique_ptr<virt_ctlr_pro> procon(new virt_ctlr_pro(phys, epoll_manager, config));
 
     std::cout << "Creating virtual pro controller input\n";
 

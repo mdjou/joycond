@@ -58,11 +58,10 @@ void phys_ctlr::init_hidraw()
         hidraw_node = *node;
         std::cout << "hidraw node: " << hidraw_node << std::endl;
 
-        // joycond doesn't use the IMU, so turn off its constant report
-        // stream (36 bytes per ~15ms report over BT). hid-nintendo's
-        // probe, including its own IMU enable, is complete by the time
-        // this evdev node appears, so this override sticks until the
-        // controller next reconnects.
+        // Optionally turn off the IMU; joycond doesn't use it itself.
+        // hid-nintendo's probe, including its own IMU enable, is complete
+        // by the time this evdev node appears, so this override sticks
+        // until the controller next reconnects.
         if (disable_imu && (model == Model::Left_Joycon || model == Model::Right_Joycon || model == Model::Procon)) {
             if (set_imu_enabled(hidraw_node, false))
                 std::cout << "IMU stream disabled on " << hidraw_node << std::endl;
@@ -400,12 +399,11 @@ bool phys_ctlr::set_home_led(unsigned short brightness)
     return true;
 }
 
-// Static "unpaired" indicator: LEDs 2 and 4 lit (top-to-bottom pattern _L_L).
+// Static "unpaired" indicator.
 // Each LED change is a single SET_PLAYER_LIGHTS HID report over BT and is
 // not re-sent. The previous implementation armed the kernel ledtrig-timer
 // trigger, which made the LED core re-send one report per LED every 500ms
-// (8 reports/s per unpaired controller); hid-nintendo rate-limits those
-// subcommands, so the flashing stuttered. A native firmware blink exists
+// (8 reports/s per unpaired controller); A native firmware blink exists
 // (flash nibble of SET_PLAYER_LIGHTS) but hid-nintendo does not expose it.
 bool phys_ctlr::set_unpaired_leds()
 {

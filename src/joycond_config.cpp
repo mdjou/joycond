@@ -70,6 +70,13 @@ joycond_config load_config(std::string const &path)
             else
                 std::cerr << "Config " << path << " line " << line_num
                           << ": disable_imu expects true|false, got '" << value << "'\n";
+        } else if (key == "thumb_btn_remap_1") {
+            std::optional<bool> thumb_btn_remap_1_parsed = parse_bool(value);
+            if (thumb_btn_remap_1_parsed)
+                config.thumb_btn_remap_1 = *thumb_btn_remap_1_parsed;
+            else
+                std::cerr << "Config " << path << " line " << line_num
+                          << ": thumb_btn_remap_1 expects true|false, got '" << value << "'\n";
         } else if (key == "pair_rumble_mode") {
             if (value == "both")
                 config.pair_rumble_mode = CombinedRumbleMode::Both;

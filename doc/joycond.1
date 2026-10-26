@@ -1,4 +1,4 @@
-.TH Joycond 1 "April  6 2021"
+.TH Joycond 1 "October 26 2026"
 
 .SH NAME
 joycond \- Systemd service to pair joy-cons together into a virtual controller
@@ -33,8 +33,23 @@ A missing file means all built-in defaults apply.
 Keys:
 .TP
 .B swap_ab_xy
-= true|false (default: false). On the combined controller, swaps the A
-and B buttons and the X and Y buttons.
+= true|false (default: false). Swaps the A/B and X/Y buttons
+(on paired joy-cons and the pro controller).
+Specifically, this remaps:
+A (EAST) -> BTN_SOUTH event (keycode 0x130),
+B (SOUTH) -> BTN_EAST event (keycode 0x131),
+Y (WEST) -> BTN_NORTH event (keycode 0x133), and
+X (NORTH) -> BTN_WEST event (keycode 0x134).
+.TP
+.B thumb_btn_remap_1
+= true|false (default: false). A custom remap of the thumbstick click
+event to nearby buttons on the paired joy-cons, meant for people who
+dislike clicking sticks: MINUS becomes LSTICK, CAP (capture) becomes
+MINUS, and HOME becomes RSTICK.
+.TP
+.B disable_imu
+= true|false (default: false). Turns off the IMU (gyro/accelerometer)
+on the controllers upon connection, likely saving some power.
 .TP
 .B rumble_gain
 = 0.0-1.0 (default: 1.0). Scales the magnitudes of uploaded rumble

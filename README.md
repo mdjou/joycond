@@ -36,6 +36,15 @@ A missing file means all built-in defaults apply.
 
 - `swap_ab_xy = true|false` (default: `false`) — on the combined
   controller, swaps the A and B buttons and the X and Y buttons.
+  Specifically, this remaps:
+  - A (EAST) -> BTN_SOUTH event (keycode 0x130)
+  - B (SOUTH) -> BTN_EAST event (keycode 0x131)
+  - Y (WEST) -> BTN_NORTH event (keycode 0x133)
+  - X (NORTH) -> BTN_WEST event (keycode 0x134)
+- `thumb_btn_remap_1 = true|false` (default: `false`) — a custom remap of
+  the thumbstick click event to nearby buttons on the paired joy-cons,
+  meant for people who dislike clicking sticks: MINUS becomes LSTICK,
+  CAP (capture) becomes MINUS, and HOME becomes RSTICK.
 - `disable_imu = true|false` (default: `false`) — when `true`, turns off
   the IMU (gyro/accelerometer) report stream on the physical controllers
   when they connect, saving BT bandwidth joycond itself doesn't use.

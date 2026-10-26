@@ -3,6 +3,7 @@
 
 #include "virt_ctlr.h"
 #include "phys_ctlr.h"
+#include "joycond_config.h"
 
 #include <memory>
 
@@ -10,9 +11,10 @@ class virt_ctlr_passthrough : public virt_ctlr
 {
     private:
         std::shared_ptr<phys_ctlr> phys;
+        joycond_config const &config;
 
     public:
-        virt_ctlr_passthrough(std::shared_ptr<phys_ctlr> phys);
+        virt_ctlr_passthrough(std::shared_ptr<phys_ctlr> phys, joycond_config const &config);
         virtual ~virt_ctlr_passthrough();
 
         virtual void handle_events(int fd);

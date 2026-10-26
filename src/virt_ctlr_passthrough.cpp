@@ -8,9 +8,15 @@
 //private
 
 //public
-virt_ctlr_passthrough::virt_ctlr_passthrough(std::shared_ptr<phys_ctlr> phys) :
-    phys(phys)
+virt_ctlr_passthrough::virt_ctlr_passthrough(std::shared_ptr<phys_ctlr> phys, joycond_config const &config) :
+    phys(phys),
+    config(config)
 {
+    // Passthrough hands the raw evdev node to the OS unmodified, so there
+    // is no relay path to apply the swap_ab_xy remap here.
+    if (config.swap_ab_xy)
+        std::cout << "note: swap_ab_xy does not apply to passthrough controllers\n";
+
     // Allow other processes to use the input now.
     if (fchmod(phys->get_fd(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))
         std::cerr << "Failed to change evdev permissions; " << strerror(errno) << std::endl;
