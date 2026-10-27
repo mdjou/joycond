@@ -85,12 +85,6 @@ void phys_ctlr::init_leds()
                 usleep(10);
                 continue;
             }
-            player_led_triggers[0].open(tmp.value() + "/trigger");
-            if (!player_led_triggers[0].is_open()) {
-                std::cerr << "Failed to open player1 trigger\n";
-                usleep(10);
-                continue;
-            }
             break;
         }
         usleep(10);
@@ -102,12 +96,6 @@ void phys_ctlr::init_leds()
             player_leds[1].open(tmp.value() + "/brightness");
             if (!player_leds[1].is_open()) {
                 std::cerr << "Failed to open player2 led brightness\n";
-                usleep(10);
-                continue;
-            }
-            player_led_triggers[1].open(tmp.value() + "/trigger");
-            if (!player_led_triggers[1].is_open()) {
-                std::cerr << "Failed to open player2 trigger\n";
                 usleep(10);
                 continue;
             }
@@ -125,12 +113,6 @@ void phys_ctlr::init_leds()
                 usleep(10);
                 continue;
             }
-            player_led_triggers[2].open(tmp.value() + "/trigger");
-            if (!player_led_triggers[2].is_open()) {
-                std::cerr << "Failed to open player3 trigger\n";
-                usleep(10);
-                continue;
-            }
             break;
         }
         usleep(10);
@@ -142,12 +124,6 @@ void phys_ctlr::init_leds()
             player_leds[3].open(tmp.value() + "/brightness");
             if (!player_leds[3].is_open()) {
                 std::cerr << "Failed to open player4 led brightness\n";
-                usleep(10);
-                continue;
-            }
-            player_led_triggers[3].open(tmp.value() + "/trigger");
-            if (!player_led_triggers[3].is_open()) {
-                std::cerr << "Failed to open player4 trigger\n";
                 usleep(10);
                 continue;
             }

@@ -19,7 +19,6 @@ class phys_ctlr
         bool is_serial;
         bool disable_imu;
         std::fstream player_leds[4];
-        std::fstream player_led_triggers[4];
         std::fstream home_led;
         bool l, zl, r, zr, sl, sr, plus, minus;
         enum Model model;
