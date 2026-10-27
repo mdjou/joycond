@@ -75,6 +75,9 @@ void phys_ctlr::init_hidraw()
 
 void phys_ctlr::init_leds()
 {
+    if (model == Model::Nyx)
+        return;
+
     std::optional<std::string> tmp;
     for (unsigned int i = 0; i < 100; i++) {
         tmp = get_led_path("player*1");
@@ -282,6 +285,10 @@ phys_ctlr::phys_ctlr(std::string const &devpath, std::string const &devname, boo
             model = Model::N64;
             std::cout << "Found N64 Controller\n";
             break;
+        case 0xa7e1:
+            model = Model::Nyx;
+            std::cout << "Found Nyx Controller\n";
+            break;
         default:
             model = Model::Unknown;
             std::cerr << "Unknown product id = " << std::hex << libevdev_get_id_product(evdev) << std::endl;
@@ -439,6 +446,9 @@ enum phys_ctlr::PairingState phys_ctlr::get_pairing_state() const
         return PairingState::Waiting;
 
     switch (model) {
+        case Model::Nyx:
+            return PairingState::Virt_Nyx;
+            break;
         case Model::Procon:
         case Model::Snescon:
         case Model::N64:

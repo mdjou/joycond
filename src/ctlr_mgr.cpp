@@ -2,6 +2,7 @@
 #include "virt_ctlr_passthrough.h"
 #include "virt_ctlr_combined.h"
 #include "virt_ctlr_pro.h"
+#include "virt_ctlr_nyx.h"
 
 #include <cstdint>
 #include <iostream>
@@ -18,6 +19,10 @@ void ctlr_mgr::epoll_event_callback(int event_fd)
                 case phys_ctlr::PairingState::Lone:
                     std::cout << "Lone controller paired\n";
                     add_passthrough_ctlr(ctlr);
+                    break;
+                case phys_ctlr::PairingState::Virt_Nyx:
+                    std::cout << "Virtual Nyx controller paired\n";
+                    add_virt_nyx_ctlr(ctlr);
                     break;
                 case phys_ctlr::PairingState::Virt_Procon:
                     std::cout << "Virtual procon paired\n";
@@ -118,6 +123,28 @@ void ctlr_mgr::add_combined_ctlr()
 
     unpaired_controllers.erase(left->get_devpath());
     unpaired_controllers.erase(right->get_devpath());
+}
+
+void ctlr_mgr::add_virt_nyx_ctlr(std::shared_ptr<phys_ctlr> phys)
+{
+    std::unique_ptr<virt_ctlr_nyx> nyxcon(new virt_ctlr_nyx(phys, epoll_manager, config));
+
+    std::cout << "Creating virtual Nyx controller input\n";
+
+    bool found_slot = false;
+    for (unsigned int i = 0; i < paired_controllers.size(); i++) {
+        if (!paired_controllers[i]) {
+            found_slot = true;
+            // no LEDs to shine
+            paired_controllers[i] = std::move(nyxcon);
+            break;
+        }
+    }
+    if (!found_slot) {
+        paired_controllers.push_back(std::move(nyxcon));
+    }
+
+    unpaired_controllers.erase(phys->get_devpath());
 }
 
 void ctlr_mgr::add_virt_procon_ctlr(std::shared_ptr<phys_ctlr> phys)

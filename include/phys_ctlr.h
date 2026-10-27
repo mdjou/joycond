@@ -9,8 +9,8 @@
 class phys_ctlr
 {
     public:
-        enum class Model { Procon, Snescon, Left_Joycon, Right_Joycon, N64, Unknown };
-        enum class PairingState { Pairing, Lone, Waiting, Horizontal, Virt_Procon };
+        enum class Model { Procon, Snescon, Left_Joycon, Right_Joycon, N64, Nyx, Unknown };
+        enum class PairingState { Pairing, Lone, Waiting, Horizontal, Virt_Procon, Virt_Nyx };
 
     private:
         std::string devpath;

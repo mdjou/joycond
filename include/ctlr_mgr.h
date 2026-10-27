@@ -28,6 +28,7 @@ class ctlr_mgr
         void add_passthrough_ctlr(std::shared_ptr<phys_ctlr> phys);
         void add_combined_ctlr();
         void add_virt_procon_ctlr(std::shared_ptr<phys_ctlr> phys);
+        void add_virt_nyx_ctlr(std::shared_ptr<phys_ctlr> phys);
 
     public:
         ctlr_mgr(epoll_mgr& epoll_manager, joycond_config const &config);
