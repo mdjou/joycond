@@ -62,7 +62,7 @@ void phys_ctlr::init_hidraw()
         // hid-nintendo's probe, including its own IMU enable, is complete
         // by the time this evdev node appears, so this override sticks
         // until the controller next reconnects.
-        if (disable_imu && (model == Model::Left_Joycon || model == Model::Right_Joycon || model == Model::Procon)) {
+        if (disable_imu) {
             if (set_imu_enabled(hidraw_node, false))
                 std::cout << "IMU stream disabled on " << hidraw_node << std::endl;
             else
@@ -312,7 +312,9 @@ phys_ctlr::phys_ctlr(std::string const &devpath, std::string const &devname, boo
             break;
     }
 
-    init_hidraw();
+    // Only use hidraw for Switch-era controllers
+    if (model == Model::Left_Joycon || model == Model::Right_Joycon || model == Model::Procon)
+        init_hidraw();
     init_leds();
 
     // Prevent other users from having access to the evdev until it's paired
