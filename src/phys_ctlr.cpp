@@ -405,9 +405,13 @@ bool phys_ctlr::set_home_led(unsigned short brightness)
 // trigger, which made the LED core re-send one report per LED every 500ms
 // (8 reports/s per unpaired controller); A native firmware blink exists
 // (flash nibble of SET_PLAYER_LIGHTS) but hid-nintendo does not expose it.
-bool phys_ctlr::set_unpaired_leds()
+bool phys_ctlr::set_wait_leds()
 {
-    static const bool wait_pattern[4] = { 0, 1, 0, 1 };
+    // try hidraw method if available
+    static const uint8_t wait_pattern[4] = { 0, 1, 0, 1 };
+    if (!hidraw_node.empty() && set_player_leds(hidraw_node, wait_pattern))
+        return true;
+
     for (int i = 0; i < 4; i++)
         set_player_led(i, wait_pattern[i]);
     return true;

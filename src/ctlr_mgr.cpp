@@ -168,7 +168,7 @@ void ctlr_mgr::add_ctlr(const std::string& devpath, const std::string& devname)
         std::cout << "Creating new phys_ctlr for " << devname << std::endl;
         phys = std::make_shared<phys_ctlr>(devpath, devname, config.disable_imu);
         unpaired_controllers[devpath] = phys;
-        phys->set_unpaired_leds();
+        phys->set_wait_leds();
         subscribers[devpath] = std::make_shared<epoll_subscriber>(std::vector({phys->get_fd()}),
                                                 [=](int event_fd){epoll_event_callback(event_fd);});
         epoll_manager.add_subscriber(subscribers[devpath]);

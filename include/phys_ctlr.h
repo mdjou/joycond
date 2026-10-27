@@ -41,7 +41,7 @@ class phys_ctlr
         bool set_all_player_leds(bool on);
         bool set_player_leds_to_player(int player);
         bool set_home_led(unsigned short brightness);
-        bool set_unpaired_leds();
+        bool set_wait_leds();
         int get_fd();
         void handle_events();
         enum Model get_model() const { return model; }
