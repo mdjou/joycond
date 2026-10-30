@@ -271,8 +271,7 @@ void virt_ctlr_combined::relay_events(std::shared_ptr<phys_ctlr> phys)
             /* Remap for for less thumbstick clicking */
             if (config.thumb_btn_remap_1) {
                 switch (ev.code) {
-                    case BTN_SELECT: ev.code = BTN_THUMBL; break;
-                    case BTN_Z:  ev.code = BTN_SELECT; break;
+                    case BTN_Z:  ev.code = BTN_THUMBL; break;
                     case BTN_MODE:  ev.code = BTN_THUMBR; break;
                     default: break;
                 }

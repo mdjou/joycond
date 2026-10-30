@@ -34,7 +34,7 @@ Rumble support is now functional for the combined joy-con uinput device.
 Optional `/etc/joycond.conf` with `key = value` lines (`#` starts a comment).
 A missing file means all built-in defaults apply.
 
-- `swap_ab_xy = true|false` (default: `false`) — on the combined
+- `swap_ab_xy = true|false` (default: `false`) - on the combined
   joy-cons, and the pro controller, swaps the A and B buttons
   and the X and Y buttons. Not applied to passthrough controllers,
   which are handed to the OS unmodified.
@@ -43,21 +43,20 @@ A missing file means all built-in defaults apply.
   - B (SOUTH) -> BTN_EAST event (keycode 0x131)
   - Y (WEST) -> BTN_NORTH event (keycode 0x133)
   - X (NORTH) -> BTN_WEST event (keycode 0x134)
-- `thumb_btn_remap_1 = true|false` (default: `false`) — a custom remap of
-  the thumbstick click event to nearby buttons on the paired joy-cons,
-  meant for people who dislike clicking sticks:
-  - MINUS button -> LSTICK event
-  - CAP (capture) button -> MINUS event
+- `thumb_btn_remap_1 = true|false` (default: `false`) - remap of HOME
+  and CAP buttons to thumbstick click events, for those who
+  dislike clicking sticks:
+  - CAP (capture) button -> LSTICK event
   - HOME button -> RSTICK event
-- `disable_imu = true|false` (default: `false`) — when `true`, turns off
+- `disable_imu = true|false` (default: `false`) - when `true`, turns off
   the IMU (gyro/accelerometer) on the physical controllers when they
   connect.
   Experimental option, which, speculatively, saves some power.
-- `rumble_gain = 0.0-1.0` (default: `1.0`) — scales the magnitudes of
+- `rumble_gain = 0.0-1.0` (default: `1.0`) - scales the magnitudes of
   uploaded rumble effects (FF_RUMBLE, FF_CONSTANT, FF_PERIODIC) before
   they are forwarded to the physical joy-cons, e.g. `0.5` for half
   strength.
-- `pair_rumble_mode = both|left|right|off` (default: `both`) — which
+- `pair_rumble_mode = both|left|right|off` (default: `both`) - which
   physical joy-con(s) receive forwarded rumble events on the paired
   (combined) controller. `left` or `right` drive only that joy-con's
   motor, `off` silences both.

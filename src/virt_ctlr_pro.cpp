@@ -42,8 +42,7 @@ void virt_ctlr_pro::relay_events(std::shared_ptr<phys_ctlr> phys)
             /* Remap for for less thumbstick clicking */
             if (config.thumb_btn_remap_1) {
                 switch (ev.code) {
-                    case BTN_SELECT: ev.code = BTN_THUMBL; break;
-                    case BTN_Z:  ev.code = BTN_SELECT; break;
+                    case BTN_Z:  ev.code = BTN_THUMBL; break;
                     case BTN_MODE:  ev.code = BTN_THUMBR; break;
                     default: break;
                 }
@@ -259,9 +258,9 @@ virt_ctlr_pro::virt_ctlr_pro(std::shared_ptr<phys_ctlr> phys, epoll_mgr& epoll_m
     libevdev_enable_event_code(virt_evdev, EV_FF, FF_SINE, NULL);
     libevdev_enable_event_code(virt_evdev, EV_FF, FF_GAIN, NULL);
 
-    // Set the product information to a non-existent product info (but with virtual bus type)
+    // Set the product information to pro controller product info (but with virtual bus type)
     libevdev_set_id_vendor(virt_evdev, 0x57e);
-    libevdev_set_id_product(virt_evdev, 0x2008); // HACK?
+    libevdev_set_id_product(virt_evdev, 0x2009);
     libevdev_set_id_bustype(virt_evdev, BUS_VIRTUAL);
     libevdev_set_id_version(virt_evdev, 0x0000);
 
