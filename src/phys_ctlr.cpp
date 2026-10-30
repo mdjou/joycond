@@ -10,8 +10,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// Copied from
-// https://github.com/torvalds/linux/blob/master/drivers/hid/hid-nintendo.c
+// Copied from linux drivers/hid/hid-nintendo.c
 #define JC_NUM_LEDS		4
 #define JC_NUM_LED_PATTERNS 8
 static const bool joycon_player_led_patterns[JC_NUM_LED_PATTERNS][JC_NUM_LEDS] = {
@@ -377,18 +376,14 @@ bool phys_ctlr::set_home_led(unsigned short brightness)
     return true;
 }
 
-// Static "unpaired" indicator.
-// Each LED change is a single SET_PLAYER_LIGHTS HID report over BT and is
-// not re-sent. The previous implementation armed the kernel ledtrig-timer
-// trigger, which made the LED core re-send one report per LED every 500ms
-// (8 reports/s per unpaired controller); A native firmware blink exists
-// (flash nibble of SET_PLAYER_LIGHTS) but hid-nintendo does not expose it.
 bool phys_ctlr::set_wait_leds()
 {
-    // try hidraw method if available
     static const uint8_t wait_pattern[4] = { 0, 1, 0, 1 };
-    if (!hidraw_node.empty() && set_player_leds(hidraw_node, wait_pattern))
-        return true;
+    // try hidraw method if available
+    if (!hidraw_node.empty()) {
+        if (set_player_leds(hidraw_node, wait_pattern))
+            return true;
+    }
 
     for (int i = 0; i < 4; i++)
         set_player_led(i, wait_pattern[i]);

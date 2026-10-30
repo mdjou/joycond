@@ -16,7 +16,7 @@ joycond is a linux daemon which uses the evdev devices provided by hid-nintendo 
 2. `sudo make -C build uninstall`
 
 # Usage
-When a joy-con or pro controller is connected via bluetooth or USB, the player LEDs signal that the controller is in pairing mode: player LEDs 2 and 4 light up steadily (top-to-bottom pattern _L_L).
+When a joy-con or pro controller is connected via bluetooth or USB, the player LEDs signal that the controller is in pairing mode: player LEDs 2 and 4 light up steadily (top-to-bottom pattern 0101).
 
 For the pro controller, pressing both triggers will "pair" it.
 
