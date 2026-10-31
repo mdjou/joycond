@@ -11,6 +11,7 @@ pkg_check_modules(LIBEVDEV REQUIRED libevdev)
 pkg_check_modules(LIBUDEV REQUIRED libudev)
 
 add_executable(joycond "")
+target_compile_options(joycond PRIVATE -Wall)
 # Enable verbose debug prints in Debug builds
 target_compile_definitions(joycond PRIVATE $<$<CONFIG:Debug>:JOYCOND_DEBUG>)
 include_directories(
